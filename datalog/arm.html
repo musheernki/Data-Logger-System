@@ -517,12 +517,28 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 8px;
   }
   .ctrl-label {
     font-family: var(--mono);
     font-size: 10px;
     color: var(--text2);
     letter-spacing: 0.5px;
+  }
+  .feature-cluster {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .status-pill {
+    font-family: var(--mono);
+    font-size: 9px;
+    min-width: 34px;
+    text-align: center;
+    padding: 3px 6px;
+    border: 1px solid var(--border2);
+    background: rgba(0,212,255,0.06);
+    color: var(--accent);
   }
   select.ctrl-select {
     font-family: var(--mono);
@@ -750,6 +766,25 @@
         <input type="range" class="ctrl-range" id="noiseLevel" min="0" max="10" value="3" step="1">
       </div>
       <div class="ctrl-row">
+        <span class="ctrl-label">ALERT THRESH</span>
+        <div class="feature-cluster">
+          <input type="range" class="ctrl-range" id="alertThreshold" min="5" max="90" value="75" step="5" onchange="changeAlertThreshold()">
+          <span class="status-pill" id="thresholdValue">75%</span>
+        </div>
+      </div>
+      <div class="ctrl-row">
+        <span class="ctrl-label">VIEW MODE</span>
+        <select class="ctrl-select" id="viewMode" onchange="changeViewMode()">
+          <option value="live" selected>LIVE</option>
+          <option value="trend">TREND</option>
+          <option value="alerts">ALERTS</option>
+        </select>
+      </div>
+      <div class="ctrl-row">
+        <button class="btn" style="flex:1;text-align:center" onclick="markEvent()">MARK EVENT</button>
+        <button class="btn" style="flex:1;text-align:center" onclick="exportJSON()">JSON</button>
+      </div>
+      <div class="ctrl-row">
         <button class="btn" style="flex:1;text-align:center" onclick="injectFault()">INJECT FAULT</button>
         <button class="btn" style="flex:1;text-align:center;margin-left:6px" onclick="resetSim()">RESET</button>
       </div>
@@ -824,6 +859,9 @@ let mainChart = null;
 let miniCharts = [];
 let simTimer = null;
 let startTime = Date.now();
+let alertThreshold = 75;
+let viewMode = 'live';
+let eventMarkers = [];
 
 // ─── INIT ─────────────────────────────────────────────────────
 function init() {
@@ -1021,11 +1059,27 @@ function updateMainChart() {
   const labels = chartHistory.labels;
   const slice = hist.slice(-chartRange);
   const lblSlice = labels.slice(-chartRange);
+  const selectedEvents = eventMarkers.filter(m => m.sensorIndex === selectedSensor).slice(-20);
+  const eventPoints = selectedEvents.map(m => ({ x: m.ts, y: m.value }));
+
   mainChart.data.labels = lblSlice;
   mainChart.data.datasets[0].label = s.id;
   mainChart.data.datasets[0].data = slice;
   mainChart.data.datasets[0].borderColor = s.color;
   mainChart.data.datasets[0].backgroundColor = hexToRgba(s.color, 0.08);
+  mainChart.data.datasets[0].borderDash = viewMode === 'trend' ? [6, 6] : [];
+  mainChart.data.datasets[0].pointRadius = viewMode === 'alerts' ? 1.5 : 0;
+  mainChart.data.datasets[1] = {
+    type: 'scatter',
+    label: 'events',
+    data: eventPoints,
+    pointRadius: 5,
+    pointHoverRadius: 7,
+    pointBackgroundColor: '#ff4444',
+    pointBorderColor: '#ffd7d7',
+    showLine: false,
+    parsing: false,
+  };
   mainChart.update('none');
   document.getElementById('chartTitle').textContent = `${s.id} · ${s.name}`;
 }
@@ -1044,6 +1098,53 @@ function setRange(n) {
   document.querySelectorAll('[id^=rb]').forEach(b => b.classList.remove('active'));
   document.getElementById(`rb${n}`).classList.add('active');
   updateMainChart();
+}
+
+// ─── FEATURE CONTROLS ────────────────────────────────────────
+function changeAlertThreshold() {
+  alertThreshold = Number(document.getElementById('alertThreshold').value);
+  document.getElementById('thresholdValue').textContent = `${alertThreshold}%`;
+  appendLog('info', `Alert sensitivity set to ${alertThreshold}% deviation from baseline`);
+}
+
+function changeViewMode() {
+  viewMode = document.getElementById('viewMode').value;
+  updateMainChart();
+  appendLog('info', `Chart mode switched to ${viewMode.toUpperCase()}`);
+}
+
+function markEvent() {
+  const s = SENSORS[selectedSensor];
+  const value = sensorValues[selectedSensor];
+  const ts = new Date().toTimeString().slice(0,8);
+  eventMarkers.push({
+    sensorIndex: selectedSensor,
+    value,
+    ts,
+    label: `${s.id} = ${value.toFixed(s.unit === 'V' ? 2 : s.unit === 'g' ? 3 : 1)}${s.unit}`
+  });
+  appendLog('ok', `Event marker added: ${s.id} = ${value}${s.unit}`);
+  updateMainChart();
+}
+
+function exportJSON() {
+  const snapshot = {
+    generatedAt: new Date().toISOString(),
+    selectedSensor: SENSORS[selectedSensor].id,
+    alertThreshold,
+    viewMode,
+    sensorValues: sensorValues.map((v, i) => ({ sensor: SENSORS[i].id, value: v, unit: SENSORS[i].unit })),
+    eventMarkers,
+    memory: memLog.slice(0, 40)
+  };
+  const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'arm_snapshot.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  appendLog('info', 'Exported system snapshot to JSON');
 }
 
 // ─── SIMULATION ───────────────────────────────────────────────
@@ -1082,14 +1183,15 @@ function tick() {
     const sbEl = document.getElementById(`sbar-${i}`);
     if (svEl) {
       svEl.innerHTML = `${val}<span class="sensor-unit">${s.unit}</span>`;
-      const alarm = pct > 85 || pct < 10;
-      const warn = pct > 70 || pct < 20;
+      const deltaPct = Math.abs(val - s.base) / Math.max(0.01, s.range[1] - s.range[0]) * 100;
+      const alarm = pct > 85 || pct < 10 || deltaPct > alertThreshold;
+      const warn = pct > 70 || pct < 20 || deltaPct > alertThreshold * 0.7;
       svEl.className = 'sensor-value' + (alarm ? ' alarm' : warn ? ' warn' : '');
       const sc = document.getElementById(`scard-${i}`);
       if (sc) sc.classList.toggle('alarm', alarm);
-      if (alarm && Math.random() < 0.3) { alarmCount++; appendLog('warn', `Alarm: ${s.id} = ${val}${s.unit} (threshold crossed)`); }
+      if (alarm && Math.random() < 0.3) { alarmCount++; appendLog('warn', `Alarm: ${s.id} = ${val}${s.unit} (deviation ${deltaPct.toFixed(1)}% / threshold ${alertThreshold}%)`); }
     }
-    if (sbEl) { sbEl.style.width = pct + '%'; sbEl.style.background = pct > 85 || pct < 10 ? '#ff4444' : pct > 70 || pct < 20 ? '#ffb300' : s.color; }
+    if (sbEl) { sbEl.style.width = pct + '%'; sbEl.style.background = pct > 85 || pct < 10 || Math.abs(sensorValues[i] - SENSORS[i].base) / Math.max(0.01, SENSORS[i].range[1] - SENSORS[i].range[0]) * 100 > alertThreshold ? '#ff4444' : pct > 70 || pct < 20 ? '#ffb300' : s.color; }
 
     document.getElementById(`smn-${i}`).textContent = `min: ${sensorMins[i] === Infinity ? '--' : sensorMins[i]}`;
     document.getElementById(`smx-${i}`).textContent = `max: ${sensorMaxs[i] === -Infinity ? '--' : sensorMaxs[i]}`;
@@ -1219,6 +1321,7 @@ function changeRate() {
 function clearLog() {
   chartHistory = { labels: [], datasets: SENSORS.map(s => []) };
   memLog = [];
+  eventMarkers = [];
   sampleCount = 0;
   sensorMins = SENSORS.map(s => Infinity);
   sensorMaxs = SENSORS.map(s => -Infinity);
@@ -1241,6 +1344,11 @@ function resetSim() {
   startTime = Date.now();
   document.getElementById('noiseLevel').value = 3;
   document.getElementById('rateSelect').value = '1000';
+  document.getElementById('alertThreshold').value = 75;
+  document.getElementById('viewMode').value = 'live';
+  alertThreshold = 75;
+  viewMode = 'live';
+  document.getElementById('thresholdValue').textContent = '75%';
   sampleInterval = 1000;
   startSim();
   appendLog('ok', 'System reset. All counters cleared.');
