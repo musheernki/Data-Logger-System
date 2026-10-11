@@ -7,34 +7,43 @@
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@300;400;600;700&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #090c10;
-    --bg2: #0d1117;
-    --bg3: #111820;
-    --panel: #131c26;
-    --panel2: #162030;
-    --border: #1e3348;
-    --border2: #2a4a68;
-    --accent: #00d4ff;
-    --accent2: #0099bb;
-    --accent3: #007a99;
-    --green: #00ff9f;
-    --green2: #00c878;
-    --amber: #ffb300;
-    --amber2: #cc8f00;
-    --red: #ff4444;
-    --red2: #cc2222;
-    --purple: #a855f7;
-    --text: #d4e8f0;
-    --text2: #7aa8c0;
-    --text3: #4a7a96;
+    --bg: #070b14;
+    --bg2: #0a1220;
+    --bg3: #0f1a2d;
+    --panel: #111d2e;
+    --panel2: #17283d;
+    --panel3: #1f3351;
+    --border: rgba(131, 156, 255, 0.18);
+    --border2: rgba(82, 214, 255, 0.42);
+    --accent: #76eaff;
+    --accent2: #3bbdff;
+    --accent3: #7a7cff;
+    --secondary: #8b5cf6;
+    --secondary2: #c084fc;
+    --green: #5cf2b8;
+    --green2: #2dd4a6;
+    --amber: #ffca4f;
+    --amber2: #ff9f1c;
+    --red: #ff5d8f;
+    --red2: #ff3d6d;
+    --purple: #b084ff;
+    --rose: #ff7eb6;
+    --text: #edf7ff;
+    --text2: #a9c5dd;
+    --text3: #7397b2;
     --mono: 'Share Tech Mono', monospace;
     --sans: 'Barlow', sans-serif;
     --cond: 'Barlow Condensed', sans-serif;
+    --glow-cyan: rgba(118, 234, 255, 0.24);
+    --glow-violet: rgba(139, 92, 246, 0.28);
   }
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   body {
-    background: var(--bg);
+    background:
+      radial-gradient(circle at top left, rgba(118,234,255,0.12), transparent 28%),
+      radial-gradient(circle at top right, rgba(139,92,246,0.18), transparent 30%),
+      linear-gradient(180deg, var(--bg) 0%, #08111d 100%);
     color: var(--text);
     font-family: var(--sans);
     min-height: 100vh;
@@ -46,15 +55,16 @@
     content: '';
     position: fixed;
     inset: 0;
-    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,212,255,0.015) 2px, rgba(0,212,255,0.015) 4px);
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(118,234,255,0.022) 2px, rgba(118,234,255,0.022) 4px);
     pointer-events: none;
     z-index: 1000;
   }
 
   /* HEADER */
   header {
-    background: var(--panel);
+    background: linear-gradient(90deg, rgba(17,29,46,0.97), rgba(24,38,60,0.92), rgba(17,29,46,0.97));
     border-bottom: 1px solid var(--border2);
+    box-shadow: 0 10px 30px rgba(18,32,54,0.4), inset 0 1px 0 rgba(118,234,255,0.15);
     padding: 0 2rem;
     display: flex;
     align-items: center;
@@ -74,6 +84,8 @@
     border: 2px solid var(--accent);
     display: flex; align-items: center; justify-content: center;
     position: relative;
+    background: radial-gradient(circle, rgba(118,234,255,0.2), rgba(122,124,255,0.06) 60%, transparent 100%);
+    box-shadow: 0 0 20px rgba(118,234,255,0.28);
     animation: pulse-border 2s ease-in-out infinite;
   }
   @keyframes pulse-border {
@@ -167,13 +179,14 @@
     gap: 8px;
   }
   .sensor-card {
-    background: var(--panel);
+    background: linear-gradient(180deg, rgba(20,31,48,0.9), rgba(14,22,35,0.96));
     border: 1px solid var(--border);
     padding: 12px;
     cursor: pointer;
-    transition: border-color 0.2s, background 0.2s;
+    transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
     position: relative;
     overflow: hidden;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
   }
   .sensor-card::before {
     content: '';
@@ -184,11 +197,11 @@
     transform: scaleY(0);
     transition: transform 0.2s;
   }
-  .sensor-card:hover { border-color: var(--border2); background: var(--panel2); }
+  .sensor-card:hover { border-color: var(--border2); background: linear-gradient(180deg, rgba(22,42,62,0.95), rgba(17,26,40,0.98)); box-shadow: 0 0 0 1px rgba(118,234,255,0.08), inset 0 1px 0 rgba(118,234,255,0.12); }
   .sensor-card:hover::before { transform: scaleY(1); }
-  .sensor-card.active { border-color: var(--accent3); background: var(--panel2); }
+  .sensor-card.active { border-color: var(--accent3); background: linear-gradient(180deg, rgba(27,49,70,0.98), rgba(18,30,45,0.98)); box-shadow: 0 0 0 1px rgba(122,124,255,0.22), 0 0 24px rgba(122,124,255,0.12); }
   .sensor-card.active::before { transform: scaleY(1); }
-  .sensor-card.alarm { border-color: var(--red2); animation: alarm-pulse 1s ease-in-out infinite; }
+  .sensor-card.alarm { border-color: var(--red2); animation: alarm-pulse 1s ease-in-out infinite; box-shadow: 0 0 0 1px rgba(255,93,143,0.22), 0 0 18px rgba(255,93,143,0.16); }
   @keyframes alarm-pulse {
     0%,100% { border-color: var(--red2); }
     50% { border-color: var(--red); }
@@ -321,17 +334,18 @@
     font-size: 10px;
     padding: 5px 12px;
     border: 1px solid var(--border2);
-    background: transparent;
+    background: linear-gradient(180deg, rgba(25,48,73,0.7), rgba(14,24,38,0.8));
     color: var(--text2);
     cursor: pointer;
     letter-spacing: 1px;
     text-transform: uppercase;
     transition: all 0.15s;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
   }
-  .btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(0,212,255,0.06); }
-  .btn.active { border-color: var(--accent); color: var(--accent); background: rgba(0,212,255,0.1); }
+  .btn:hover { border-color: var(--accent); color: var(--accent); background: linear-gradient(180deg, rgba(31,64,92,0.95), rgba(18,29,42,0.95)); box-shadow: 0 0 18px rgba(118,234,255,0.12); }
+  .btn.active { border-color: var(--accent); color: var(--accent); background: linear-gradient(180deg, rgba(31,74,97,0.95), rgba(20,36,50,0.95)); }
   .btn.danger { border-color: var(--red2); color: var(--red); }
-  .btn.danger:hover { border-color: var(--red); background: rgba(255,68,68,0.08); }
+  .btn.danger:hover { border-color: var(--red); background: rgba(255,93,143,0.1); }
 
   canvas#mainChart {
     width: 100% !important;
@@ -353,15 +367,16 @@
     padding: 0 16px 12px;
   }
   .mini-chart-card {
-    background: var(--panel);
+    background: linear-gradient(180deg, rgba(18,29,43,0.88), rgba(12,19,31,0.98));
     border: 1px solid var(--border);
     padding: 8px;
     position: relative;
     cursor: pointer;
-    transition: border-color 0.2s;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
   }
-  .mini-chart-card:hover { border-color: var(--border2); }
-  .mini-chart-card.sel { border-color: var(--accent3); }
+  .mini-chart-card:hover { border-color: var(--border2); box-shadow: 0 0 16px rgba(118,234,255,0.08); }
+  .mini-chart-card.sel { border-color: var(--accent3); box-shadow: 0 0 0 1px rgba(122,124,255,0.14), 0 0 16px rgba(122,124,255,0.08); }
   .mini-label {
     font-family: var(--mono);
     font-size: 9px;
@@ -374,11 +389,12 @@
 
   /* TERMINAL / LOG */
   .terminal {
-    background: var(--bg2);
+    background: linear-gradient(180deg, rgba(8,15,24,0.96), rgba(10,16,26,0.98));
     border-top: 1px solid var(--border);
     height: 180px;
     display: flex;
     flex-direction: column;
+    box-shadow: inset 0 1px 0 rgba(118,234,255,0.09);
   }
   .terminal-header {
     display: flex;
@@ -484,9 +500,10 @@
     padding: 12px;
   }
   .stat-box {
-    background: var(--panel);
+    background: linear-gradient(180deg, rgba(17,29,46,0.9), rgba(12,20,32,0.96));
     border: 1px solid var(--border);
     padding: 10px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
   }
   .stat-label {
     font-family: var(--mono);
@@ -575,8 +592,8 @@
     padding: 0 4px;
     transition: background 0.15s;
   }
-  .asm-line:hover { background: rgba(0,212,255,0.05); }
-  .asm-line.executing { background: rgba(0,212,255,0.1); }
+  .asm-line:hover { background: rgba(118,234,255,0.06); }
+  .asm-line.executing { background: linear-gradient(90deg, rgba(118,234,255,0.15), rgba(122,124,255,0.08)); }
   .asm-addr2 { color: var(--accent3); }
   .asm-op { color: var(--amber); }
   .asm-args { color: var(--text2); }
